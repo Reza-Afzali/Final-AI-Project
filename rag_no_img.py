@@ -151,15 +151,11 @@ class RAGAgent:
         results = self.query(question, top_k=top_k)
 
         # Aggregate relevant chunks
-        context_parts = []
-
-        
-            
         context_parts = results["documents"][0]
-        context = "\n\n".join(context_parts)
+        context = "".join(context_parts)
 
         prompt = f"""You are a helpful assistant with access to corporate documents.
-    Use the following context to answer the user's question:
+        Use the following context to answer the user's question:
 
     Context:
     {context}
@@ -168,9 +164,22 @@ class RAGAgent:
     Answer:"""
 
         response = self.gemini_model.generate_content(prompt)
-        #return response.text
+
+        # Generate citation list from metadata
+        citations = []
+        for metadata in results["metadatas"][0]:
+            source = metadata.get("source", "Unknown source")
+            company = metadata.get("company", "")
+            year = metadata.get("year", "")
+            citation = f"{source} ({company}, {year})"
+            if citation not in citations:
+                citations.append(citation)
+
+        # Format citations
+        citation_text = "Sources:" + " ".join(f"- {c}" for c in citations)
+
         return {
-            "answer": response.text,
+            "answer": response.text + citation_text,
             "documents": results["documents"],
             "metadatas": results["metadatas"]
         }
