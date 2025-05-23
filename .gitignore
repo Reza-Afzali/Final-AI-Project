@@ -1,2 +1,5 @@
 .env
 .env.*
+Dataset/
+__pycache__/
+persist_store/

@@ -183,5 +183,11 @@ class RAGAgent:
             "documents": results["documents"],
             "metadatas": results["metadatas"]
         }
-
+#----------------------------------------------------------------------------------------------------------------------------
+def generateAnswerTool(question):
+    print("Generate answer tool test")
+    agent=RAGAgent()
+    agent.indexPDF()
+    return agent.generate_answer(question)
+    
 
