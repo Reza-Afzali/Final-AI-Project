@@ -172,6 +172,10 @@ web_agent = create_react_agent(
         "• 🗞 Aktuelle Nachrichten (NewsAPI oder Tavily)\n"
         "• 📝 Quellenangabe, falls möglich\n\n"
         "Wenn die Firma nicht erkannt wurde, weise höflich auf die verfügbaren Optionen hin.\n"
+        "Wenn du eine Anfrage bekommst, extrahiere nur den Firmennamen (z.B. Apple, Microsoft) aus der Nutzerfrage und rufe das Tool `get_company_news` mit genau diesem Firmennamen als Argument auf."
+        "Wenn der Benutzer eine Frage zu einem Unternehmen stellt, rufe sofort das Tool `get_company_news` mit dem Unternehmensnamen als Argument auf und liefere das Ergebnis ohne weitere Rückfragen."
+
         
     )
 )
+
