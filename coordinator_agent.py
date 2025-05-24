@@ -4,6 +4,14 @@ from web_agent import web_agent
 from langchain_core.tools import Tool
 from langgraph.prebuilt import create_react_agent
 import re
+from rag_no_img import generateAnswerTool
+import os
+from langsmith import traceable
+from dotenv import load_dotenv
+load_dotenv()
+os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
+os.environ["LANGCHAIN_PROJECT"] = "Final Project"
+os.environ["LANGCHAIN_TRACING_V2"] = "true"
 
 # Инициализация модели
 gemini_model = init_chat_model("gemini-2.0-flash", model_provider="google_genai")
@@ -12,21 +20,23 @@ gemini_model = init_chat_model("gemini-2.0-flash", model_provider="google_genai"
 def analyze_company(query: str) -> str:
     return f"📊 Analytische Auswertung für: {query}"
 
-analytics_tool = Tool(
-    name="analyze_company",
-    func=analyze_company,
-    description="Verwende dieses Tool für Marktanalysen, Prognosen oder statistische Bewertungen."
+rag_tool = Tool(
+    name="rag",
+    func=generateAnswerTool,
+    description="Frage,die mit Investorberichte verbunden sind, beantworten."
 )
 
-analytics_agent = create_react_agent(
+rag_agent = create_react_agent(
     model=gemini_model,
-    tools=[analytics_tool],
-    name="analytics_agent",
-    prompt=(
-        "Du bist ein Finanzanalyst.\n"
-        "Du beantwortest nur Fragen zur Marktanalyse, Vorhersagen, Trends oder Finanzkennzahlen.\n"
-        "Verwende ausschließlich das Tool 'analyze_company'."
-    )
+    tools=[rag_tool],
+    name="rag_agent",
+        prompt=(
+            "Du bist ein spezialisierter RAG-Agent im Finanzbereich.\n"
+            "Deine Aufgabe ist es, Fragen zu Marktanalysen, Trends, Vorhersagen und Finanzkennzahlen von  US-Unternehmen,wie Apple,Google,Meta,Microsoft,Nvidia"
+            "zu beantworten – ausschließlich basierend auf offiziellen 10-Q und 10-K SEC-Berichten aus den Jahren 2020 bis 2024.\n"
+            "\n"
+            "Verwende ausschließlich das Tool 'generateAnswerTool'."
+        )
 )
 
 # Выбор агента по ключевым словам
@@ -90,7 +100,7 @@ def coordinator_handle(user_message: str) -> str:
             "messages": [{"role": "user", "content": company_name}]
         })
     else:
-        response = analytics_agent.invoke({
+        response = rag_agent.invoke({
             "messages": [{"role": "user", "content": user_message}]
         })
 
@@ -104,20 +114,20 @@ def coordinator_handle(user_message: str) -> str:
 
 # (Опционально) создание supervisor-а
 coordinator_agent = create_supervisor(
-    agents=[web_agent, analytics_agent],
+    agents=[web_agent, rag_agent],
     model=gemini_model,
     prompt=(
         "Du bist ein Koordinator-Agent, der zwei spezialisierte Agenten verwaltet:\n"
         "- web_agent für Nachrichten, Aktienkurse, aktuelle Finanzinformationen.\n"
-        "- analytics_agent für Analyse, Prognosen und Finanzbewertung.\n"
+        "- rag_agent für die Informationen aus Investorenberichten 2020–2024\n"
         "Wähle den passenden Agenten basierend auf der Nutzerfrage und gib nur die Antwort dieses Agenten zurück."
     ),
     add_handoff_back_messages=True,
     output_mode="full_history",
 ).compile()
-
+q_to_web="Was sind die aktuellen Nachrichten über Apple Aktienkurs?"
+q_to_rag="What is revenue of Apple 2023?"
 # Для теста
 if __name__ == "__main__":
-    test_msg = "Was sind die aktuellen Nachrichten über Apple Aktienkurs?"
+    test_msg =q_to_rag
     print(coordinator_handle(test_msg))
-
